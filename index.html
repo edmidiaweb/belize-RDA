@@ -4,318 +4,77 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Belize RDT - Sistema de Gestão</title>
-    <style>
-        :root { --admin: #0f172a; --worker: #0284c7; --bg: #f8fafc; --success: #16a34a; --danger: #dc2626; --warning: #d97706; --whatsapp: #25d366; --belize: #1e40af; }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); margin: 0; padding: 10px; color: #1e293b; }
-        .container { max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
-        .header { text-align: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 15px; margin-bottom: 20px; }
-        .header h1 { margin: 0; color: var(--belize); font-size: 1.5rem; letter-spacing: -1px; }
-        .header p { margin: 5px 0 0; font-size: 0.8rem; color: #64748b; font-weight: bold; }
-        .hidden { display: none; }
-        .card { background: #ffffff; border: 1px solid #e2e8f0; padding: 15px; margin-bottom: 15px; border-radius: 10px; }
-        input, select, textarea { padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #cbd5e1; width: 100%; box-sizing: border-box; font-size: 1rem; }
-        button { padding: 14px; cursor: pointer; border-radius: 8px; border: none; font-weight: bold; width: 100%; transition: all 0.2s; font-size: 0.9rem; }
-        .btn-adm { background: var(--admin); color: white; }
-        .btn-adm:active { transform: scale(0.98); }
-        .btn-wa { background: var(--whatsapp); color: white; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .op-hours { font-size: 0.7rem; color: #475569; text-align: center; margin-bottom: 15px; background: #f1f5f9; padding: 6px; border-radius: 20px; border: 1px solid #e2e8f0; }
-        .day-tag { font-size: 0.7rem; background: var(--belize); color: white; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; }
-        .task-row { padding: 12px 0; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
-        .photo-btn { background: #6366f1; color: white; margin: 10px 0; }
-        .preview-img { width: 100%; border-radius: 8px; margin-top: 10px; border: 2px solid #e2e8f0; }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <div class="container">
     <div class="header">
         <h1>BELIZE RDT</h1>
-        <p>RELATÓRIO DIÁRIO DE TRABALHO</p>
+        <p class="subtitle">RELATÓRIO DIÁRIO DE TRABALHO</p>
     </div>
 
-    <div class="op-hours" id="live-clock">🕒 Verificando horário operacional...</div>
-
     <div id="login-screen">
-        <input type="text" id="login-user" placeholder="Usuário (Nome)">
+        <input type="text" id="login-user" placeholder="Nome do Funcionário">
         <input type="password" id="login-pass" placeholder="Senha">
         <button class="btn-adm" onclick="handleLogin()">ENTRAR NO SISTEMA</button>
-        <p style="text-align:center; font-size:0.7rem; color:#94a3b8; margin-top:15px;">Acesso restrito a colaboradores autorizados.</p>
+        <p style="text-align:center; font-size:0.6rem; color:#94a3b8; margin-top:10px;">Acesso restrito a colaboradores Belize.</p>
     </div>
 
     <div id="change-pass-screen" class="hidden">
-        <div class="card" style="border-top: 4px solid var(--danger);">
-            <h3 style="margin-top:0">🔐 Atualizar Senha</h3>
-            <p style="font-size:0.8rem; color:#64748b;">Para sua segurança, troque a senha inicial "123".</p>
+        <div class="card border-danger">
+            <h4>🔐 Nova Senha Obrigatória</h4>
+            <p style="font-size:0.8rem">Para sua segurança, crie uma senha pessoal:</p>
             <input type="password" id="new-p1" placeholder="Nova Senha">
-            <input type="password" id="new-p2" placeholder="Confirme a Nova Senha">
-            <button class="btn-adm" style="background:var(--success)" onclick="finalizePassChange()">SALVAR NOVA SENHA</button>
+            <input type="password" id="new-p2" placeholder="Confirme a Senha">
+            <button class="btn-success" onclick="finalizePassChange()">SALVAR E ACESSAR</button>
         </div>
     </div>
 
     <div id="admin-panel" class="hidden">
-        <div class="nav"><b>Painel de Controle</b> <button onclick="location.reload()" style="width:auto; padding:5px 10px; font-size:0.7rem;">SAIR</button></div>
+        <div class="nav-header">
+            <b class="text-belize">PAINEL ENCARREGADO</b>
+            <button class="btn-small" onclick="location.reload()">SAIR</button>
+        </div>
+
+        <div class="card bg-dash">
+            <h4 style="margin:0 0 10px 0; color: #1e40af;">📊 Produtividade Semanal</h4>
+            <div id="dashboard-stats"></div>
+            <p id="week-info" style="font-size: 0.6rem; color: #60a5fa; margin-top: 8px; text-align: center;"></p>
+        </div>
         
-        <div class="card" style="background: #f0fdf4; border: 1px solid #bbf7d0;">
-            <button class="btn-wa" onclick="generateReport()">
-                <span>🟢</span> GERAR RELATÓRIO DO DIA
-            </button>
-            <div id="report-area" class="hidden" style="margin-top:10px;">
-                <textarea id="report-text" rows="6" style="font-size:0.8rem; border-color:#86efac;"></textarea>
-                <button class="btn-wa" onclick="sendAndClear()">ENVIAR WHATSAPP E LIMPAR HOJE</button>
-                <p style="font-size:0.6rem; color:#166534; text-align:center; margin-top:5px;">Esta ação apaga as tarefas concluídas, mas mantém a agenda.</p>
-            </div>
-        </div>
-
         <div class="card">
-            <h4>📅 Agendar para a Semana</h4>
+            <h4>📅 Agendar Atividade</h4>
             <select id="assign-to"></select>
-            <select id="assign-day">
-                <option value="1">Segunda-feira</option><option value="2">Terça-feira</option>
-                <option value="3">Quarta-feira</option><option value="4">Quinta-feira</option>
-                <option value="5">Sexta-feira</option><option value="6">Sábado</option>
-            </select>
-            <input type="text" id="task-desc" placeholder="Descrição da atividade...">
-            <button class="btn-adm" onclick="createTask()">LANÇAR NA AGENDA</button>
+            <input type="text" id="task-desc" placeholder="O que deve ser feito?">
+            <button class="btn-adm" onclick="createTask()">LANÇAR TAREFA</button>
         </div>
 
-        <h4>Monitoramento da Equipe</h4>
-        <div id="admin-monitor"></div>
+        <h4>Equipe e Atividades</h4>
+        <div id="worker-accordion"></div>
 
-        <div class="card" style="background:#f8fafc;">
-            <p style="font-size:0.75rem; font-weight:bold; margin-bottom:5px;">Adicionar Funcionário</p>
-            <div style="display:flex; gap:5px;">
-                <input type="text" id="new-worker-name" placeholder="Nome" style="margin:0">
-                <button class="btn-adm" style="width:auto; padding:0 20px;" onclick="addWorker()">+</button>
+        <div class="card bg-report">
+            <button class="btn-wa" onclick="generateReport()">📋 GERAR RELATÓRIO DO DIA</button>
+            <div id="report-area" class="hidden mt-10">
+                <textarea id="report-text" rows="5"></textarea>
+                <button class="btn-wa" onclick="sendAndClear()">ENVIAR WHATSAPP E LIMPAR</button>
             </div>
         </div>
     </div>
 
     <div id="worker-panel" class="hidden">
-        <div class="nav">
-            <span id="display-worker-name" style="font-weight:bold; color:var(--belize)"></span>
-            <button onclick="location.reload()" style="width:auto; padding:5px 10px; font-size:0.7rem;">SAIR</button>
+        <div class="nav-header">
+            <b>Olá, <span id="display-worker-name"></span></b>
+            <button class="btn-small" onclick="location.reload()">SAIR</button>
         </div>
-
-        <div id="worker-active-task" class="card hidden" style="border: 2px solid var(--worker);">
-            <p style="font-size:0.65rem; color:var(--danger); font-weight:bold; text-align:center;">⚠️ ATENÇÃO AOS EPIS E SEGURANÇA</p>
-            <h2 id="active-task-title" style="text-align:center; margin:10px 0;"></h2>
-            
-            <label class="photo-btn" style="display:block; text-align:center; padding:12px; border-radius:8px; cursor:pointer; font-weight:bold;">
-                📷 TIRAR FOTO DO SERVIÇO
-                <input type="file" accept="image/*" capture="environment" id="photo-input" style="display:none" onchange="previewPhoto(event)">
-            </label>
-            <img id="img-preview" class="preview-img hidden">
-            
-            <textarea id="worker-obs" placeholder="Observações do serviço (opcional)..."></textarea>
-            <button class="btn-adm" style="background:var(--success)" onclick="completeTask()">FINALIZAR ATIVIDADE</button>
-        </div>
-
-        <h4 id="worker-day-label">Minhas Tarefas</h4>
+        
+        <div id="active-task-area" class="hidden"></div>
+        
+        <h4>Suas Atribuições</h4>
         <div id="worker-task-list"></div>
     </div>
 </div>
 
-<script>
-    const MY_PHONE = "5513996305218";
-    const REPORT_TIME = "16:40";
-    const DAYS = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
-
-    let db = JSON.parse(localStorage.getItem('belize_rdt_db')) || {
-        admin: { pass: "admbelize2026" },
-        team: {
-            "lucas": { name: "Lucas", pass: "123", tasks: [] },
-            "gamarra": { name: "Gamarra", pass: "123", tasks: [] },
-            "mateus": { name: "Mateus", pass: "123", tasks: [] },
-            "luis": { name: "Luis", pass: "123", tasks: [] }
-        }
-    };
-
-    let currentUserKey = null;
-    let currentPhotoBase64 = null;
-
-    function save() { localStorage.setItem('belize_rdt_db', JSON.stringify(db)); }
-    function getTime() { const n = new Date(); return n.getHours().toString().padStart(2,'0')+":"+n.getMinutes().toString().padStart(2,'0'); }
-
-    function isWorkTime() {
-        const n = new Date(); const d = n.getDay(); const h = n.getHours();
-        if (d >= 1 && d <= 5) return h >= 8 && h < 17;
-        if (d === 6) return h >= 8 && h < 12;
-        return false;
-    }
-
-    // RELÓGIO E ALERTAS
-    setInterval(() => {
-        const now = new Date();
-        const t = now.getHours().toString().padStart(2,'0') + ":" + now.getMinutes().toString().padStart(2,'0');
-        document.getElementById('live-clock').innerText = "🕒 Horário Atual: " + t + (isWorkTime() ? " (Operacional)" : " (Fora de Horário)");
-        if(t === REPORT_TIME) document.getElementById('live-clock').style.background = "#fef3c7";
-    }, 1000);
-
-    // LOGIN
-    function handleLogin() {
-        const u = document.getElementById('login-user').value.trim().toLowerCase();
-        const p = document.getElementById('login-pass').value;
-
-        if(u === 'admin' && p === db.admin.pass) {
-            showAdmin(); return;
-        }
-
-        if(db.team[u] && db.team[u].pass === p) {
-            if(!isWorkTime()) return alert("Acesso bloqueado fora do horário de trabalho.");
-            currentUserKey = u;
-            if(p === "123") {
-                document.getElementById('login-screen').classList.add('hidden');
-                document.getElementById('change-pass-screen').classList.remove('hidden');
-            } else {
-                showWorker();
-            }
-            return;
-        }
-        alert("Credenciais incorretas.");
-    }
-
-    function finalizePassChange() {
-        const p1 = document.getElementById('new-p1').value;
-        const p2 = document.getElementById('new-p2').value;
-        if(p1.length < 3 || p1 !== p2 || p1 === "123") return alert("Senha inválida.");
-        db.team[currentUserKey].pass = p1;
-        save(); showWorker();
-    }
-
-    // ADMIN
-    function showAdmin() {
-        document.getElementById('login-screen').classList.add('hidden');
-        document.getElementById('admin-panel').classList.remove('hidden');
-        renderAdminUI();
-    }
-
-    function addWorker() {
-        const name = document.getElementById('new-worker-name').value.trim();
-        if(!name) return;
-        const key = name.toLowerCase().replace(/\s/g, '');
-        db.team[key] = { name: name, pass: "123", tasks: [] };
-        save(); renderAdminUI();
-        document.getElementById('new-worker-name').value = "";
-    }
-
-    function renderAdminUI() {
-        const list = document.getElementById('worker-list-admin');
-        const select = document.getElementById('assign-to');
-        const mon = document.getElementById('admin-monitor');
-        list.innerHTML = ''; select.innerHTML = ''; mon.innerHTML = '';
-
-        for(let key in db.team) {
-            select.innerHTML += `<option value="${key}">${db.team[key].name}</option>`;
-            
-            // Monitor de tarefas
-            let h = `<div class="card"><b>👤 ${db.team[key].name}</b>`;
-            db.team[key].tasks.forEach(t => {
-                h += `<div class="task-row" style="font-size:0.75rem">
-                    <span><small class="day-tag">${DAYS[t.day].substring(0,3)}</small> ${t.desc}</span>
-                    <span style="color:${t.status==='Concluída'?'green':'orange'}">${t.status}</span>
-                </div>`;
-            });
-            mon.innerHTML += h + `</div>`;
-        }
-    }
-
-    function createTask() {
-        const key = document.getElementById('assign-to').value;
-        const desc = document.getElementById('task-desc').value;
-        const day = document.getElementById('assign-day').value;
-        if(!desc) return;
-        db.team[key].tasks.push({ id: Date.now(), desc, day: parseInt(day), status: 'Pendente', start: null, end: null, photo: null, obs: "" });
-        save(); renderAdminUI();
-        document.getElementById('task-desc').value = "";
-        alert("Tarefa agendada!");
-    }
-
-    // FUNCIONÁRIO
-    function showWorker() {
-        document.getElementById('login-screen').classList.add('hidden');
-        document.getElementById('change-pass-screen').classList.add('hidden');
-        document.getElementById('worker-panel').classList.remove('hidden');
-        document.getElementById('display-worker-name').innerText = "Funcionário: " + db.team[currentUserKey].name;
-        renderWorkerTasks();
-    }
-
-    function renderWorkerTasks() {
-        const list = document.getElementById('worker-task-list');
-        const area = document.getElementById('worker-active-task');
-        const today = new Date().getDay();
-        list.innerHTML = '';
-        
-        const active = db.team[currentUserKey].tasks.find(t => t.status === 'Executando');
-        if(active) {
-            area.classList.remove('hidden');
-            document.getElementById('active-task-title').innerText = active.desc;
-        } else {
-            area.classList.add('hidden');
-            const mine = db.team[currentUserKey].tasks.filter(t => t.day === today && t.status === 'Pendente');
-            if(mine.length === 0) list.innerHTML = "<p style='text-align:center; color:#94a3b8;'>Sem tarefas para hoje.</p>";
-            mine.forEach(t => {
-                list.innerHTML += `<div class="card"><b>${t.desc}</b><button class="btn-adm" style="margin-top:10px" onclick="startTask(${t.id})">INICIAR AGORA</button></div>`;
-            });
-        }
-    }
-
-    function previewPhoto(e) {
-        const reader = new FileReader();
-        reader.onload = () => {
-            currentPhotoBase64 = reader.result;
-            const img = document.getElementById('img-preview');
-            img.src = reader.result; img.classList.remove('hidden');
-        };
-        reader.readAsDataURL(e.target.files[0]);
-    }
-
-    function startTask(id) {
-        if(!isWorkTime()) return alert("Fora do horário operacional.");
-        const t = db.team[currentUserKey].tasks.find(x => x.id === id);
-        t.status = 'Executando'; t.start = getTime();
-        save(); renderWorkerTasks();
-    }
-
-    function completeTask() {
-        const t = db.team[currentUserKey].tasks.find(x => x.status === 'Executando');
-        t.status = 'Concluída'; t.end = getTime();
-        t.photo = currentPhotoBase64;
-        t.obs = document.getElementById('worker-obs').value;
-        save();
-        currentPhotoBase64 = null;
-        document.getElementById('img-preview').classList.add('hidden');
-        document.getElementById('worker-obs').value = "";
-        alert("Atividade concluída com sucesso!");
-        renderWorkerTasks();
-    }
-
-    // RELATÓRIO
-    function generateReport() {
-        let r = `📋 *BELIZE RDT - ${new Date().toLocaleDateString()}*\n\n`;
-        let data = false;
-        for(let k in db.team) {
-            const done = db.team[k].tasks.filter(t => t.status === 'Concluída');
-            if(done.length > 0) {
-                data = true;
-                r += `👤 *${db.team[k].name.toUpperCase()}*\n`;
-                done.forEach(t => {
-                    r += `✅ ${t.desc}\n⏰ ${t.start} às ${t.end}\n${t.obs ? '📝 Obs: '+t.obs+'\n' : ''}`;
-                });
-                r += `\n`;
-            }
-        }
-        if(!data) return alert("Nenhuma tarefa concluída hoje.");
-        document.getElementById('report-text').value = r;
-        document.getElementById('report-area').classList.remove('hidden');
-    }
-
-    function sendAndClear() {
-        const txt = encodeURIComponent(document.getElementById('report-text').value);
-        window.open(`https://wa.me/${MY_PHONE}?text=${txt}`, '_blank');
-        for(let k in db.team) db.team[k].tasks = db.team[k].tasks.filter(t => t.status !== 'Concluída');
-        save(); location.reload();
-    }
-</script>
+<script src="script.js"></script>
 </body>
 </html>
