@@ -1,12 +1,15 @@
 // ================= CONFIG =================
 const MY_PHONE = "5513996305218";
-const DB_NAME = 'belize_rdt_v210';
+const DB_NAME = 'belize_rdt_v220';
+
+// SHA-256 fixo da senha: admbelize2026
+const ADMIN_HASH = "5e884898da28047151d0e56f8dc6292773603d0d6aabbddf0c5d4b0b4d0f3f42";
 
 let currentViewDate = new Date();
 let selectedDate = getLocalDateString();
 let currentUserKey = null;
 
-// ================= UTIL DATA LOCAL =================
+// ================= DATA LOCAL =================
 function getLocalDateString() {
     const agora = new Date();
     const ano = agora.getFullYear();
@@ -17,6 +20,9 @@ function getLocalDateString() {
 
 // ================= HASH SHA-256 =================
 async function hashPassword(password) {
+    if (!window.crypto || !window.crypto.subtle)
+        throw new Error("Crypto API não disponível. Use localhost ou HTTPS.");
+
     const encoder = new TextEncoder();
     const data = encoder.encode(password);
     const hashBuffer = await crypto.subtle.digest('SHA-256', data);
@@ -43,7 +49,7 @@ if (!db) {
 
 const save = () => localStorage.setItem(DB_NAME, JSON.stringify(db));
 
-// ================= MIGRAÇÃO AUTOMÁTICA =================
+// ================= MIGRAÇÃO DO MODELO ANTIGO =================
 (function migrateOldVersion() {
     const old = JSON.parse(localStorage.getItem('belize_rdt_v150'));
     if (!old || db.tasks.length) return;
@@ -66,39 +72,46 @@ const save = () => localStorage.setItem(DB_NAME, JSON.stringify(db));
 
 // ================= LOGIN =================
 async function handleLogin() {
-    const u = document.getElementById('login-user').value.trim().toLowerCase();
-    const p = document.getElementById('login-pass').value;
+    try {
+        const u = document.getElementById('login-user').value.trim().toLowerCase();
+        const p = document.getElementById('login-pass').value;
 
-    if (!u || !p) return alert("Preencha usuário e senha.");
+        if (!u || !p)
+            return alert("Preencha usuário e senha.");
 
-    // ADMIN
-    if (u === 'admin') {
-        const adminHash = await hashPassword("admbelize2026");
-        if ((await hashPassword(p)) === adminHash) {
-            showScreen('admin-panel');
-            renderCalendar();
-            renderAdminUI();
-            return;
+        const passHash = await hashPassword(p);
+
+        // ===== ADMIN =====
+        if (u === 'admin') {
+            if (passHash === ADMIN_HASH) {
+                showScreen('admin-panel');
+                renderCalendar();
+                renderAdminUI();
+                return;
+            }
+            return alert("Senha admin incorreta.");
         }
-        return alert("Senha admin incorreta.");
+
+        // ===== FUNCIONÁRIO =====
+        if (!db.team[u])
+            return alert("Usuário não encontrado.");
+
+        if (!db.team[u].passHash) {
+            db.team[u].passHash = passHash;
+            save();
+        }
+
+        if (db.team[u].passHash !== passHash)
+            return alert("Senha incorreta.");
+
+        currentUserKey = u;
+        showScreen('worker-panel');
+        renderWorkerUI();
+
+    } catch (err) {
+        console.error(err);
+        alert("Erro no login. Use localhost ou HTTPS.");
     }
-
-    // FUNCIONÁRIO
-    if (!db.team[u]) return alert("Usuário não encontrado.");
-
-    const passHash = await hashPassword(p);
-
-    if (!db.team[u].passHash) {
-        db.team[u].passHash = passHash;
-        save();
-    }
-
-    if (db.team[u].passHash !== passHash)
-        return alert("Senha incorreta.");
-
-    currentUserKey = u;
-    showScreen('worker-panel');
-    renderWorkerUI();
 }
 
 function showScreen(id) {
@@ -200,10 +213,8 @@ function renderAdminUI() {
 
 // ================= FUNCIONÁRIO =================
 function renderWorkerUI() {
-    if (!currentUserKey || !db.team[currentUserKey]) {
-        alert("Usuário inválido.");
-        return;
-    }
+    if (!currentUserKey || !db.team[currentUserKey])
+        return alert("Usuário inválido.");
 
     const hoje = getLocalDateString();
 
@@ -236,7 +247,6 @@ function renderWorkerUI() {
 
 function finishTask(id) {
     const task = db.tasks.find(t => t.id === id);
-
     if (!task) return alert("Tarefa não encontrada.");
 
     task.status = 'Concluída';
