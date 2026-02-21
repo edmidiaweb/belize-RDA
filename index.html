@@ -6,92 +6,55 @@
     <title>Belize RDA</title>
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#1e40af">
 </head>
 <body>
-
 <div class="container">
     <div class="header">
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <div style="text-align: left;">
                 <h1>BELIZE RDA</h1>
-                <h7>Relatório Diário de Atividades</h7>
                 <p class="subtitle">GESTÃO E ZELADORIA</p>
             </div>
             <button onclick="toggleDarkMode()" class="btn-theme">🌓</button>
         </div>
     </div>
-
     <div id="rest-screen" class="hidden">
-        <div class="card" style="text-align: center; border: none; background: rgba(30, 64, 175, 0.1);">
+        <div class="card" style="text-align: center;">
             <h2 style="color: var(--belize);">✨ Momento de Descanso</h2>
-            <p id="rest-message" style="font-style: italic; line-height: 1.6;"></p>
-            <button class="btn-adm" onclick="location.reload()">OK</button>
+            <p id="rest-message"></p>
+            <button class="btn-adm" onclick="location.reload()">VOLTAR</button>
         </div>
     </div>
-
     <div id="login-screen">
         <input type="text" id="login-user" placeholder="Usuário">
         <input type="password" id="login-pass" placeholder="Senha">
-        <button class="btn-adm" onclick="handleLogin()">ENTRAR NO SISTEMA</button>
+        <button class="btn-adm" onclick="handleLogin()">ENTRAR</button>
     </div>
-
     <div id="admin-panel" class="hidden">
-        <div class="nav-header">
-            <b class="text-accent">PAINEL ENCARREGADO</b>
-            <button class="btn-small" onclick="location.reload()">SAIR</button>
-        </div>
-
+        <div class="nav-header"><b>ENCARREGADO</b> <button onclick="location.reload()">SAIR</button></div>
         <div class="card">
-            <div style="display:flex; justify-content:space-between; align-items:center">
-                <h4>📅 Calendário Belize</h4>
-                <div id="month-nav" class="hidden">
-                    <button class="btn-small" onclick="changeMonth(-1)">◀</button>
-                    <button class="btn-small" onclick="changeMonth(1)">▶</button>
-                </div>
-            </div>
+            <div id="month-nav" class="hidden"><button onclick="changeMonth(-1)">◀</button> <button onclick="changeMonth(1)">▶</button></div>
             <div id="calendar-container"></div>
-            <p id="selected-date-label" class="date-display"></p>
+            <p id="selected-date-label"></p>
         </div>
-
         <div class="card admin-action-card">
-            <h4>🛠️ Registrar Minha Atividade (Admin)</h4>
-            <input type="text" id="admin-task-desc" placeholder="O que VOCÊ realizou?">
-            <input type="file" accept="image/*" capture="environment" id="admin-photo-input">
-            <button class="btn-adm" onclick="saveAdminTask()">SALVAR ATIVIDADE</button>
+            <input type="text" id="admin-task-desc" placeholder="Minha atividade">
+            <button class="btn-adm" onclick="saveAdminTask()">SALVAR</button>
         </div>
-        
-        <div class="card bg-dash">
-            <h4>➕ Agendar para Funcionário</h4>
+        <div class="card">
             <select id="assign-to"></select>
-            <input type="text" id="task-desc" placeholder="Descrição da tarefa...">
-            <button class="btn-adm" onclick="createTask()">LANÇAR TAREFA</button>
+            <input type="text" id="task-desc" placeholder="Tarefa do funcionário">
+            <button class="btn-adm" onclick="createTask()">LANÇAR</button>
         </div>
-
-        <h4>Atividades do Dia</h4>
         <div id="worker-accordion"></div>
-
-        <div class="card bg-report">
-            <button class="btn-wa" onclick="generateReport()">📋 GERAR RELATÓRIO DO DIA</button>
-            <div id="report-area" class="hidden mt-10">
-                <textarea id="report-text" rows="5"></textarea>
-                <button class="btn-wa" onclick="sendAndClear()">ENVIAR WHATSAPP</button>
-            </div>
-        </div>
+        <button class="btn-wa" onclick="generateReport()">📋 RELATÓRIO</button>
+        <div id="report-area" class="hidden mt-10"><textarea id="report-text"></textarea><button onclick="sendAndClear()">ENVIAR</button></div>
     </div>
-
     <div id="worker-panel" class="hidden">
-        <div class="nav-header">
-            <b>Olá, <span id="display-worker-name"></span></b>
-            <button class="btn-small" onclick="location.reload()">SAIR</button>
-        </div>
-        <div id="active-task-area" class="hidden"></div>
-        <h4>Suas Tarefas de Hoje</h4>
+        <b>Olá, <span id="display-worker-name"></span></b>
         <div id="worker-task-list"></div>
     </div>
 </div>
-
 <script src="script.js"></script>
 </body>
-
 </html>
