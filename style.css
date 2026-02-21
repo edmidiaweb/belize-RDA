@@ -1,34 +1,30 @@
 :root {
-    --bg-body: #f1f5f9; --bg-container: #ffffff; --text-main: #1e293b;
-    --card-border: #e2e8f0; --belize: #1e40af; --cal-day-bg: #f8fafc;
+    --bg: #f8fafc; --container: #ffffff; --text: #1e293b;
+    --belize: #1e40af; --border: #e2e8f0; --cal-bg: #f1f5f9;
 }
 
 body.dark-mode {
-    --bg-body: #0f172a; --bg-container: #1e293b; --text-main: #f1f5f9;
-    --card-border: #334155; --belize: #3b82f6; --cal-day-bg: #334155;
+    --bg: #0f172a; --container: #1e293b; --text: #f1f5f9;
+    --border: #334155; --cal-bg: #0f172a;
 }
 
-body { font-family: sans-serif; background-color: var(--bg-body); color: var(--text-main); margin: 0; padding: 10px; transition: 0.3s; }
-.container { max-width: 500px; margin: auto; background-color: var(--bg-container); padding: 20px; border-radius: 16px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-.header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid var(--card-border); }
+body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; transition: 0.3s; }
+.container { max-width: 500px; margin: auto; background: var(--container); padding: 20px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
 .header h1 { color: var(--belize); margin: 0; }
+.subtitle { font-size: 0.7rem; color: #64748b; font-weight: bold; }
 .hidden { display: none; }
 
 /* Calendário */
-.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-.cal-day { padding: 10px 0; text-align: center; background: var(--cal-day-bg); border-radius: 6px; font-size: 0.8rem; cursor: pointer; position: relative; }
+.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top: 10px; }
+.cal-day { padding: 10px 0; text-align: center; background: var(--cal-bg); border-radius: 6px; cursor: pointer; font-size: 0.8rem; border: 1px solid var(--border); }
 .selected-day { background: var(--belize) !important; color: white; font-weight: bold; }
-.holiday { color: #dc2626; font-weight: bold; border: 1px solid #fecaca; }
-.dot { height: 4px; width: 4px; background-color: #dc2626; border-radius: 50%; position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%); }
 
-.card { border: 1px solid var(--card-border); padding: 15px; margin-bottom: 15px; border-radius: 12px; }
-.admin-action-card { border-left: 5px solid var(--belize); }
-input, select, textarea { padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid var(--card-border); width: 100%; box-sizing: border-box; background: var(--bg-body); color: var(--text-main); }
-button { padding: 12px; cursor: pointer; border-radius: 8px; border: none; font-weight: bold; width: 100%; }
+.card { border: 1px solid var(--border); padding: 15px; margin-bottom: 15px; border-radius: 12px; background: var(--container); }
+input, select, textarea { padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid var(--border); width: 100%; box-sizing: border-box; background: var(--cal-bg); color: var(--text); }
+button { padding: 14px; cursor: pointer; border-radius: 8px; border: none; font-weight: bold; width: 100%; }
 .btn-adm { background: var(--belize); color: white; }
 .btn-wa { background: #25d366; color: white; }
-.btn-small { width: auto; padding: 5px 10px; font-size: 0.7rem; background: var(--card-border); color: var(--text-main); }
 .btn-theme { background: transparent; font-size: 1.2rem; width: auto; }
-.worker-card { border: 1px solid var(--card-border); border-radius: 8px; margin-bottom: 8px; }
-.worker-header { background: var(--cal-day-bg); padding: 10px; cursor: pointer; display: flex; justify-content: space-between; font-weight: bold; }
-.task-item { padding: 8px; border-bottom: 1px solid var(--card-border); font-size: 0.85rem; }
+.btn-small { width: auto; padding: 5px 10px; font-size: 0.7rem; background: var(--border); color: var(--text); }
+.worker-header { background: var(--cal-bg); padding: 10px; cursor: pointer; display: flex; justify-content: space-between; font-weight: bold; border-radius: 8px; margin-bottom: 5px; }
+.task-item { padding: 5px 0; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
