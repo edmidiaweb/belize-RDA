@@ -1,12 +1,21 @@
 // ================= CONFIG =================
 const MY_PHONE = "5513996305218";
-const DB_NAME = 'belize_rdt_v200';
+const DB_NAME = 'belize_rdt_v210';
 
 let currentViewDate = new Date();
-let selectedDate = new Date().toISOString().split('T')[0];
+let selectedDate = getLocalDateString();
 let currentUserKey = null;
 
-// ================= HASH (SHA-256) =================
+// ================= UTIL DATA LOCAL =================
+function getLocalDateString() {
+    const agora = new Date();
+    const ano = agora.getFullYear();
+    const mes = String(agora.getMonth() + 1).padStart(2, '0');
+    const dia = String(agora.getDate()).padStart(2, '0');
+    return `${ano}-${mes}-${dia}`;
+}
+
+// ================= HASH SHA-256 =================
 async function hashPassword(password) {
     const encoder = new TextEncoder();
     const data = encoder.encode(password);
@@ -21,48 +30,39 @@ let db = JSON.parse(localStorage.getItem(DB_NAME));
 
 if (!db) {
     db = {
-        team: {},
+        team: {
+            "lucas": { name: "Lucas", passHash: null },
+            "gamarra": { name: "Gamarra", passHash: null },
+            "mateus": { name: "Mateus", passHash: null },
+            "luis": { name: "Luis", passHash: null }
+        },
         tasks: [],
         reports: {}
     };
 }
 
-// ===== MIGRAÇÃO AUTOMÁTICA DO MODELO ANTIGO =====
-function migrateIfNeeded() {
-    if (db.adminTasks !== undefined || Object.values(db.team || {}).some(u => u.tasks)) {
-        const old = JSON.parse(localStorage.getItem('belize_rdt_v150'));
-        if (old) {
-            const newDB = {
-                team: {},
-                tasks: [],
-                reports: {}
-            };
-
-            for (let key in old.team) {
-                newDB.team[key] = {
-                    name: old.team[key].name,
-                    passHash: null
-                };
-
-                old.team[key].tasks.forEach(t => {
-                    newDB.tasks.push({
-                        id: t.id,
-                        workerId: key,
-                        date: t.date,
-                        desc: t.desc,
-                        status: t.status
-                    });
-                });
-            }
-
-            db = newDB;
-            save();
-        }
-    }
-}
-migrateIfNeeded();
-
 const save = () => localStorage.setItem(DB_NAME, JSON.stringify(db));
+
+// ================= MIGRAÇÃO AUTOMÁTICA =================
+(function migrateOldVersion() {
+    const old = JSON.parse(localStorage.getItem('belize_rdt_v150'));
+    if (!old || db.tasks.length) return;
+
+    for (let key in old.team) {
+        if (!db.team[key]) continue;
+
+        old.team[key].tasks.forEach(t => {
+            db.tasks.push({
+                id: t.id,
+                workerId: key,
+                date: t.date,
+                desc: t.desc,
+                status: t.status
+            });
+        });
+    }
+    save();
+})();
 
 // ================= LOGIN =================
 async function handleLogin() {
@@ -80,26 +80,69 @@ async function handleLogin() {
             renderAdminUI();
             return;
         }
+        return alert("Senha admin incorreta.");
     }
 
     // FUNCIONÁRIO
-    const user = db.team[u];
-    if (!user) return alert("Usuário não encontrado.");
+    if (!db.team[u]) return alert("Usuário não encontrado.");
 
     const passHash = await hashPassword(p);
 
-    if (!user.passHash) {
-        // Primeira vez → salva hash
-        user.passHash = passHash;
+    if (!db.team[u].passHash) {
+        db.team[u].passHash = passHash;
         save();
     }
 
-    if (user.passHash !== passHash)
+    if (db.team[u].passHash !== passHash)
         return alert("Senha incorreta.");
 
     currentUserKey = u;
     showScreen('worker-panel');
     renderWorkerUI();
+}
+
+function showScreen(id) {
+    ['login-screen', 'admin-panel', 'worker-panel', 'rest-screen'].forEach(s => {
+        const el = document.getElementById(s);
+        if (el) el.classList.add('hidden');
+    });
+    document.getElementById(id).classList.remove('hidden');
+}
+
+// ================= CALENDÁRIO =================
+function renderCalendar() {
+    const container = document.getElementById('calendar-container');
+    if (!container) return;
+
+    const year = currentViewDate.getFullYear();
+    const month = currentViewDate.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    let html = `<div class="cal-header">${currentViewDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).toUpperCase()}</div>`;
+    html += `<div class="calendar-grid">`;
+
+    for (let i = 1; i <= daysInMonth; i++) {
+        const dStr = `${year}-${String(month+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+
+        html += `
+            <div class="cal-day ${dStr === selectedDate ? 'selected-day' : ''}"
+                onclick="selectDate('${dStr}')">
+                ${i}
+            </div>`;
+    }
+
+    container.innerHTML = html + `</div>`;
+}
+
+function selectDate(date) {
+    selectedDate = date;
+    renderCalendar();
+    renderAdminUI();
+}
+
+function changeMonth(dir) {
+    currentViewDate.setMonth(currentViewDate.getMonth() + dir);
+    renderCalendar();
 }
 
 // ================= ADMIN =================
@@ -157,16 +200,26 @@ function renderAdminUI() {
 
 // ================= FUNCIONÁRIO =================
 function renderWorkerUI() {
-    const hoje = new Date().toISOString().split('T')[0];
-    const list = document.getElementById('worker-task-list');
+    if (!currentUserKey || !db.team[currentUserKey]) {
+        alert("Usuário inválido.");
+        return;
+    }
+
+    const hoje = getLocalDateString();
 
     const tasks = db.tasks.filter(t =>
         t.workerId === currentUserKey &&
         t.date === hoje
     );
 
+    const list = document.getElementById('worker-task-list');
+
     if (!tasks.length) {
-        list.innerHTML = `<div class="card">Nenhuma tarefa para hoje.</div>`;
+        list.innerHTML = `
+            <div class="card" style="text-align:center; opacity:0.7">
+                <p>Nenhuma tarefa para hoje (${hoje.split('-').reverse().join('/')})</p>
+                <small>As tarefas aparecem apenas no dia programado.</small>
+            </div>`;
         return;
     }
 
@@ -220,13 +273,11 @@ function sendAndClear() {
 
     window.open(`https://wa.me/${MY_PHONE}?text=${encodeURIComponent(text)}`, '_blank');
 
-    // Marca relatório como enviado
     db.reports[selectedDate] = {
         sent: true,
         sentAt: Date.now()
     };
 
-    // Remove tarefas concluídas desse dia
     db.tasks = db.tasks.filter(t =>
         !(t.date === selectedDate && t.status === 'Concluída')
     );
