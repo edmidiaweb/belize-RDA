@@ -3,55 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Belize RDA</title>
+    <title>Belize RDT</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="manifest" href="manifest.json">
 </head>
 <body>
 <div class="container">
     <div class="header">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div style="text-align: left;">
-                <h1>BELIZE RDA</h1>
-                <p class="subtitle">GESTÃO E ZELADORIA</p>
-            </div>
-            <button onclick="toggleDarkMode()" class="btn-theme">🌓</button>
-        </div>
+        <h1>BELIZE RDT</h1>
+        <button onclick="toggleDarkMode()" class="btn-theme">🌓</button>
     </div>
+
     <div id="rest-screen" class="hidden">
-        <div class="card" style="text-align: center;">
-            <h2 style="color: var(--belize);">✨ Momento de Descanso</h2>
+        <div class="card" style="text-align:center; padding: 40px 20px;">
+            <h2 style="color: var(--belize);">✨ Bom Descanso</h2>
             <p id="rest-message"></p>
-            <button class="btn-adm" onclick="location.reload()">VOLTAR</button>
+            <button class="btn-adm" onclick="location.reload()">SAIR</button>
         </div>
     </div>
+
     <div id="login-screen">
         <input type="text" id="login-user" placeholder="Usuário">
         <input type="password" id="login-pass" placeholder="Senha">
         <button class="btn-adm" onclick="handleLogin()">ENTRAR</button>
     </div>
+
     <div id="admin-panel" class="hidden">
-        <div class="nav-header"><b>ENCARREGADO</b> <button onclick="location.reload()">SAIR</button></div>
+        <div class="nav-header"><b>ADMIN</b> <button onclick="location.reload()">SAIR</button></div>
         <div class="card">
-            <div id="month-nav" class="hidden"><button onclick="changeMonth(-1)">◀</button> <button onclick="changeMonth(1)">▶</button></div>
+            <div id="month-nav"><button onclick="changeMonth(-1)">◀ Mês Anterior</button> <button onclick="changeMonth(1)">Próximo Mês ▶</button></div>
             <div id="calendar-container"></div>
-            <p id="selected-date-label"></p>
-        </div>
-        <div class="card admin-action-card">
-            <input type="text" id="admin-task-desc" placeholder="Minha atividade">
-            <button class="btn-adm" onclick="saveAdminTask()">SALVAR</button>
+            <p id="selected-date-label" style="text-align:center; font-weight:bold"></p>
         </div>
         <div class="card">
             <select id="assign-to"></select>
-            <input type="text" id="task-desc" placeholder="Tarefa do funcionário">
-            <button class="btn-adm" onclick="createTask()">LANÇAR</button>
+            <input type="text" id="task-desc" placeholder="Tarefa">
+            <button class="btn-adm" onclick="createTask()">LANÇAR TAREFA</button>
         </div>
         <div id="worker-accordion"></div>
-        <button class="btn-wa" onclick="generateReport()">📋 RELATÓRIO</button>
-        <div id="report-area" class="hidden mt-10"><textarea id="report-text"></textarea><button onclick="sendAndClear()">ENVIAR</button></div>
     </div>
+
     <div id="worker-panel" class="hidden">
-        <b>Olá, <span id="display-worker-name"></span></b>
+        <div class="nav-header"><b>Olá, <span id="display-worker-name"></span></b> <button onclick="location.reload()">SAIR</button></div>
         <div id="worker-task-list"></div>
     </div>
 </div>
