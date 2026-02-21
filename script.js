@@ -1,29 +1,22 @@
-// ================= CONFIG =================
+// ================= CONFIGURAÇÕES E BANCO =================
 const MY_PHONE = "5513996305218";
-const DB_NAME = 'belize_rdt_v350'; // Nova versão para resetar o cache
+const DB_NAME = 'belize_rdt_v400'; // Versão nova para evitar conflitos antigos
 
 let currentViewDate = new Date();
 let currentUserKey = null;
 
-// Função de data robusta (YYYY-MM-DD)
+// Função para obter a data no formato YYYY-MM-DD sem erros de fuso
 function getFixedDate() {
     const d = new Date();
-    return d.toISOString().split('T')[0]; 
+    const ano = d.getFullYear();
+    const mes = String(d.getMonth() + 1).padStart(2, '0');
+    const dia = String(d.getDate()).padStart(2, '0');
+    return `${ano}-${mes}-${dia}`;
 }
 
 let selectedDate = getFixedDate();
 
-// Feriados Itanhaém 2026
-const holidays = {
-    "01-01": "Confraternização Universal", "01-20": "São Sebastião",
-    "02-16": "Carnaval", "02-17": "Carnaval", "04-03": "Sexta-feira Santa",
-    "04-21": "Tiradentes", "04-22": "Aniversário Itanhaém", "05-01": "Dia do Trabalho",
-    "06-04": "Corpus Christi", "07-09": "Revolução Constitucionalista",
-    "09-07": "Independência", "10-12": "Nossa Sra. Aparecida", "11-02": "Finados",
-    "11-15": "Proclamação República", "11-20": "Consciência Negra", "12-25": "Natal"
-};
-
-// ================= BANCO =================
+// Inicialização do Banco de Dados
 let db = JSON.parse(localStorage.getItem(DB_NAME)) || {
     team: {
         "lucas": { name: "Lucas", pass: "123" },
@@ -34,14 +27,40 @@ let db = JSON.parse(localStorage.getItem(DB_NAME)) || {
     tasks: []
 };
 
-const save = () => localStorage.setItem(DB_NAME, JSON.stringify(db));
+function save() {
+    localStorage.setItem(DB_NAME, JSON.stringify(db));
+}
 
-// ================= LOGIN (SIMPLIFICADO) =================
+// ================= INTERFACE E TEMA =================
+function toggleDarkMode() {
+    document.body.classList.toggle('dark-mode');
+    const isDark = document.body.classList.contains('dark-mode');
+    localStorage.setItem('belize_theme', isDark ? 'dark' : 'light');
+}
+
+// Carregar tema salvo ao iniciar
+(function() {
+    if (localStorage.getItem('belize_theme') === 'dark') {
+        document.body.classList.add('dark-mode');
+    }
+})();
+
+function showScreen(id) {
+    const screens = ['login-screen', 'admin-panel', 'worker-panel', 'rest-screen'];
+    screens.forEach(s => {
+        const el = document.getElementById(s);
+        if (el) el.classList.add('hidden');
+    });
+    const target = document.getElementById(id);
+    if (target) target.classList.remove('hidden');
+}
+
+// ================= LOGIN =================
 function handleLogin() {
     const u = document.getElementById('login-user').value.trim().toLowerCase();
     const p = document.getElementById('login-pass').value;
 
-    // LOGIN ADMIN (Acesso Direto)
+    // Login Admin Simplificado (sem hash para evitar erro de HTTPS)
     if (u === 'admin' && p === 'admbelize2026') {
         showScreen('admin-panel');
         renderCalendar();
@@ -49,51 +68,41 @@ function handleLogin() {
         return;
     }
 
-    // LOGIN FUNCIONÁRIO
+    // Login Funcionários (Lucas, Gamarra, Mateus, Luis)
     if (db.team[u] && db.team[u].pass === p) {
         currentUserKey = u;
         showScreen('worker-panel');
         renderWorkerUI();
     } else {
-        alert("Usuário ou senha inválidos.");
+        alert("Usuário ou senha incorretos.");
     }
 }
 
-function showScreen(id) {
-    ['login-screen', 'admin-panel', 'worker-panel', 'rest-screen'].forEach(s => {
-        const el = document.getElementById(s);
-        if (el) el.classList.add('hidden');
-    });
-    document.getElementById(id).classList.remove('hidden');
-}
-
-// ================= CALENDÁRIO =================
+// ================= ADMIN (CALENDÁRIO E TAREFAS) =================
 function renderCalendar() {
     const container = document.getElementById('calendar-container');
     if (!container) return;
 
     const year = currentViewDate.getFullYear();
     const month = currentViewDate.getMonth();
-    const days = new Date(year, month + 1, 0).getDate();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-    let html = `<div class="cal-header">${currentViewDate.toLocaleDateString('pt-BR', {month:'long', year:'numeric'}).toUpperCase()}</div>`;
+    let html = `<div class="cal-header">${currentViewDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).toUpperCase()}</div>`;
     html += `<div class="calendar-grid">`;
 
-    for (let i = 1; i <= days; i++) {
-        const dStr = `${year}-${String(month+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
-        const hol = holidays[`${String(month+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`];
-        
-        html += `<div class="cal-day ${dStr === selectedDate ? 'selected-day' : ''} ${hol ? 'holiday' : ''}" 
-                 onclick="selectDate('${dStr}')">${i}${hol ? '<span class="dot"></span>' : ''}</div>`;
+    for (let i = 1; i <= daysInMonth; i++) {
+        const dStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+        html += `<div class="cal-day ${dStr === selectedDate ? 'selected-day' : ''}" onclick="selectDate('${dStr}')">${i}</div>`;
     }
+
     container.innerHTML = html + `</div>`;
-    document.getElementById('selected-date-label').innerText = "Data: " + selectedDate.split('-').reverse().join('/');
+    document.getElementById('selected-date-label').innerText = "Data Selecionada: " + selectedDate.split('-').reverse().join('/');
 }
 
-function selectDate(date) { 
-    selectedDate = date; 
-    renderCalendar(); 
-    renderAdminUI(); 
+function selectDate(date) {
+    selectedDate = date;
+    renderCalendar();
+    renderAdminUI();
 }
 
 function changeMonth(dir) {
@@ -101,10 +110,10 @@ function changeMonth(dir) {
     renderCalendar();
 }
 
-// ================= ADMIN =================
 function createTask() {
     const worker = document.getElementById('assign-to').value;
     const desc = document.getElementById('task-desc').value.trim();
+
     if (!desc) return alert("Descreva a tarefa.");
 
     db.tasks.push({
@@ -118,22 +127,27 @@ function createTask() {
     save();
     renderAdminUI();
     document.getElementById('task-desc').value = "";
-    alert("Tarefa enviada!");
 }
 
 function renderAdminUI() {
-    const acc = document.getElementById('worker-accordion');
-    if (!acc) return;
-    acc.innerHTML = '';
+    const accordion = document.getElementById('worker-accordion');
+    if (!accordion) return;
+    accordion.innerHTML = '';
 
     const sel = document.getElementById('assign-to');
-    sel.innerHTML = Object.keys(db.team).map(k => `<option value="${k}">${db.team[k].name}</option>`).join('');
+    if (sel) {
+        sel.innerHTML = Object.keys(db.team)
+            .map(k => `<option value="${k}">${db.team[k].name}</option>`)
+            .join('');
+    }
 
     for (let k in db.team) {
         const tasks = db.tasks.filter(t => t.workerId === k && t.date === selectedDate);
-        const content = tasks.map(t => `<div class="task-item"><b>${t.desc}</b> - ${t.status}</div>`).join('') || 'Sem tarefas.';
-        
-        acc.innerHTML += `
+        const content = tasks.length 
+            ? tasks.map(t => `<div class="task-item"><b>${t.desc}</b> - ${t.status}</div>`).join('')
+            : '<p style="padding:10px; font-size:0.75rem; opacity:0.6">Sem atividades.</p>';
+
+        accordion.innerHTML += `
             <div class="worker-card">
                 <div class="worker-header" onclick="this.nextElementSibling.classList.toggle('hidden')">
                     ${db.team[k].name} ▾
@@ -143,23 +157,30 @@ function renderAdminUI() {
     }
 }
 
-// ================= FUNCIONÁRIO (LUCAS) =================
+// ================= FUNCIONÁRIO (PAINEL DO LUCAS) =================
 function renderWorkerUI() {
     const hoje = getFixedDate();
     const tasks = db.tasks.filter(t => t.workerId === currentUserKey && t.date === hoje);
     const list = document.getElementById('worker-task-list');
+    
     document.getElementById('display-worker-name').innerText = db.team[currentUserKey].name;
 
     if (tasks.length === 0) {
-        list.innerHTML = `<div class="card" style="text-align:center">Nenhuma tarefa para hoje (${hoje.split('-').reverse().join('/')})</div>`;
-    } else {
-        list.innerHTML = tasks.map(t => `
-            <div class="card">
-                <h3>${t.desc}</h3>
-                <p>Status: ${t.status}</p>
-                ${t.status === 'Pendente' ? `<button class="btn-adm" onclick="finishTask(${t.id})">FINALIZAR</button>` : '✅ Concluída'}
-            </div>`).join('');
+        list.innerHTML = `
+            <div class="card" style="text-align:center; opacity:0.7">
+                <p>Nenhuma tarefa para hoje (${hoje.split('-').reverse().join('/')})</p>
+            </div>`;
+        return;
     }
+
+    list.innerHTML = tasks.map(t => `
+        <div class="card">
+            <h3>${t.desc}</h3>
+            <p>Status: <b>${t.status}</b></p>
+            ${t.status === 'Pendente' 
+                ? `<button class="btn-adm" onclick="finishTask(${t.id})">CONCLUIR TAREFA</button>` 
+                : '✅ Concluída'}
+        </div>`).join('');
 }
 
 function finishTask(id) {
@@ -171,13 +192,11 @@ function finishTask(id) {
     }
 }
 
-// ================= TEMA E WHATSAPP =================
-function toggleDarkMode() {
-    document.body.classList.toggle('dark-mode');
-}
-
+// ================= RELATÓRIOS E WHATSAPP =================
 function generateReport() {
     const tasks = db.tasks.filter(t => t.date === selectedDate);
+    if (!tasks.length) return alert("Nenhuma tarefa neste dia.");
+
     let r = `📋 *BELIZE RDT - ${selectedDate.split('-').reverse().join('/')}*\n`;
     Object.keys(db.team).forEach(k => {
         const wt = tasks.filter(t => t.workerId === k);
@@ -186,6 +205,7 @@ function generateReport() {
             wt.forEach(t => r += `${t.status === 'Concluída' ? '✅' : '⏳'} ${t.desc}\n`);
         }
     });
+
     document.getElementById('report-text').value = r;
     document.getElementById('report-area').classList.remove('hidden');
 }
