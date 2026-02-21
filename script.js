@@ -1,136 +1,181 @@
 // ================= CONFIG =================
 const MY_PHONE = "5513996305218";
-const DB_NAME = 'belize_rdt_v300'; // Nova versão para limpar o cache de erros
-
-const ADMIN_HASH = "5e884898da28047151d0e56f8dc6292773603d0d6aabbddf0c5d4b0b4d0f3f42";
+const DB_NAME = 'belize_rdt_v350'; // Nova versão para resetar o cache
 
 let currentViewDate = new Date();
 let currentUserKey = null;
 
-// CORREÇÃO: Função de data mais robusta para evitar erros de fuso
+// Função de data robusta (YYYY-MM-DD)
 function getFixedDate() {
     const d = new Date();
-    // Ajusta para o fuso de Brasília (UTC-3) antes de converter para string
-    const offset = -3;
-    const brasilaTime = new Date(d.getTime() + (offset * 3600000));
     return d.toISOString().split('T')[0]; 
 }
 
 let selectedDate = getFixedDate();
 
+// Feriados Itanhaém 2026
+const holidays = {
+    "01-01": "Confraternização Universal", "01-20": "São Sebastião",
+    "02-16": "Carnaval", "02-17": "Carnaval", "04-03": "Sexta-feira Santa",
+    "04-21": "Tiradentes", "04-22": "Aniversário Itanhaém", "05-01": "Dia do Trabalho",
+    "06-04": "Corpus Christi", "07-09": "Revolução Constitucionalista",
+    "09-07": "Independência", "10-12": "Nossa Sra. Aparecida", "11-02": "Finados",
+    "11-15": "Proclamação República", "11-20": "Consciência Negra", "12-25": "Natal"
+};
+
 // ================= BANCO =================
 let db = JSON.parse(localStorage.getItem(DB_NAME)) || {
     team: {
-        "lucas": { name: "Lucas", passHash: null },
-        "gamarra": { name: "Gamarra", passHash: null },
-        "mateus": { name: "Mateus", passHash: null },
-        "luis": { name: "Luis", passHash: null }
+        "lucas": { name: "Lucas", pass: "123" },
+        "gamarra": { name: "Gamarra", pass: "123" },
+        "mateus": { name: "Mateus", pass: "123" },
+        "luis": { name: "Luis", pass: "123" }
     },
     tasks: []
 };
 
 const save = () => localStorage.setItem(DB_NAME, JSON.stringify(db));
 
-// ================= HASH =================
-async function hashPassword(password) {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(password);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-// ================= LOGIN =================
-async function handleLogin() {
+// ================= LOGIN (SIMPLIFICADO) =================
+function handleLogin() {
     const u = document.getElementById('login-user').value.trim().toLowerCase();
     const p = document.getElementById('login-pass').value;
-    const passHash = await hashPassword(p);
 
-    if (u === 'admin' && passHash === ADMIN_HASH) {
-        showScreen('admin-panel'); renderCalendar(); renderAdminUI(); return;
+    // LOGIN ADMIN (Acesso Direto)
+    if (u === 'admin' && p === 'admbelize2026') {
+        showScreen('admin-panel');
+        renderCalendar();
+        renderAdminUI();
+        return;
     }
 
-    if (db.team[u]) {
-        if (!db.team[u].passHash) { db.team[u].passHash = passHash; save(); }
-        if (db.team[u].passHash === passHash) {
-            currentUserKey = u;
-            showScreen('worker-panel'); renderWorkerUI(); return;
-        }
+    // LOGIN FUNCIONÁRIO
+    if (db.team[u] && db.team[u].pass === p) {
+        currentUserKey = u;
+        showScreen('worker-panel');
+        renderWorkerUI();
+    } else {
+        alert("Usuário ou senha inválidos.");
     }
-    alert("Dados incorretos.");
 }
 
 function showScreen(id) {
-    ['login-screen', 'admin-panel', 'worker-panel'].forEach(s => document.getElementById(s)?.classList.add('hidden'));
+    ['login-screen', 'admin-panel', 'worker-panel', 'rest-screen'].forEach(s => {
+        const el = document.getElementById(s);
+        if (el) el.classList.add('hidden');
+    });
     document.getElementById(id).classList.remove('hidden');
 }
 
-// ================= ADMIN =================
+// ================= CALENDÁRIO =================
 function renderCalendar() {
     const container = document.getElementById('calendar-container');
+    if (!container) return;
+
     const year = currentViewDate.getFullYear();
     const month = currentViewDate.getMonth();
     const days = new Date(year, month + 1, 0).getDate();
 
-    let html = `<div class="cal-header">${currentViewDate.toLocaleDateString('pt-BR', {month:'long', year:'numeric'}).toUpperCase()}</div><div class="calendar-grid">`;
+    let html = `<div class="cal-header">${currentViewDate.toLocaleDateString('pt-BR', {month:'long', year:'numeric'}).toUpperCase()}</div>`;
+    html += `<div class="calendar-grid">`;
+
     for (let i = 1; i <= days; i++) {
         const dStr = `${year}-${String(month+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
-        html += `<div class="cal-day ${dStr === selectedDate ? 'selected-day' : ''}" onclick="selectDate('${dStr}')">${i}</div>`;
+        const hol = holidays[`${String(month+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`];
+        
+        html += `<div class="cal-day ${dStr === selectedDate ? 'selected-day' : ''} ${hol ? 'holiday' : ''}" 
+                 onclick="selectDate('${dStr}')">${i}${hol ? '<span class="dot"></span>' : ''}</div>`;
     }
     container.innerHTML = html + `</div>`;
-    document.getElementById('selected-date-label').innerText = "Agendando para: " + selectedDate.split('-').reverse().join('/');
+    document.getElementById('selected-date-label').innerText = "Data: " + selectedDate.split('-').reverse().join('/');
 }
 
-function selectDate(date) { selectedDate = date; renderCalendar(); renderAdminUI(); }
+function selectDate(date) { 
+    selectedDate = date; 
+    renderCalendar(); 
+    renderAdminUI(); 
+}
 
+function changeMonth(dir) {
+    currentViewDate.setMonth(currentViewDate.getMonth() + dir);
+    renderCalendar();
+}
+
+// ================= ADMIN =================
 function createTask() {
     const worker = document.getElementById('assign-to').value;
     const desc = document.getElementById('task-desc').value.trim();
-    if (!desc) return;
+    if (!desc) return alert("Descreva a tarefa.");
 
-    db.tasks.push({ id: Date.now(), workerId: worker, date: selectedDate, desc, status: 'Pendente' });
-    save(); renderAdminUI();
+    db.tasks.push({
+        id: Date.now(),
+        workerId: worker,
+        date: selectedDate,
+        desc: desc,
+        status: 'Pendente'
+    });
+
+    save();
+    renderAdminUI();
     document.getElementById('task-desc').value = "";
+    alert("Tarefa enviada!");
 }
 
 function renderAdminUI() {
     const acc = document.getElementById('worker-accordion');
+    if (!acc) return;
     acc.innerHTML = '';
+
     const sel = document.getElementById('assign-to');
     sel.innerHTML = Object.keys(db.team).map(k => `<option value="${k}">${db.team[k].name}</option>`).join('');
 
     for (let k in db.team) {
         const tasks = db.tasks.filter(t => t.workerId === k && t.date === selectedDate);
-        const content = tasks.map(t => `<div class="task-item"><b>${t.desc}</b> - ${t.status}</div>`).join('') || 'Nenhuma tarefa.';
-        acc.innerHTML += `<div class="worker-card"><div class="worker-header" onclick="this.nextElementSibling.classList.toggle('hidden')">${db.team[k].name} ▾</div><div class="worker-content hidden">${content}</div></div>`;
+        const content = tasks.map(t => `<div class="task-item"><b>${t.desc}</b> - ${t.status}</div>`).join('') || 'Sem tarefas.';
+        
+        acc.innerHTML += `
+            <div class="worker-card">
+                <div class="worker-header" onclick="this.nextElementSibling.classList.toggle('hidden')">
+                    ${db.team[k].name} ▾
+                </div>
+                <div class="worker-content hidden">${content}</div>
+            </div>`;
     }
 }
 
-// ================= FUNCIONÁRIO =================
+// ================= FUNCIONÁRIO (LUCAS) =================
 function renderWorkerUI() {
     const hoje = getFixedDate();
     const tasks = db.tasks.filter(t => t.workerId === currentUserKey && t.date === hoje);
     const list = document.getElementById('worker-task-list');
     document.getElementById('display-worker-name').innerText = db.team[currentUserKey].name;
 
-    if (!tasks.length) {
+    if (tasks.length === 0) {
         list.innerHTML = `<div class="card" style="text-align:center">Nenhuma tarefa para hoje (${hoje.split('-').reverse().join('/')})</div>`;
-        return;
+    } else {
+        list.innerHTML = tasks.map(t => `
+            <div class="card">
+                <h3>${t.desc}</h3>
+                <p>Status: ${t.status}</p>
+                ${t.status === 'Pendente' ? `<button class="btn-adm" onclick="finishTask(${t.id})">FINALIZAR</button>` : '✅ Concluída'}
+            </div>`).join('');
     }
-
-    list.innerHTML = tasks.map(t => `
-        <div class="card">
-            <h3>${t.desc}</h3>
-            <p>Status: ${t.status}</p>
-            ${t.status === 'Pendente' ? `<button class="btn-adm" onclick="finishTask(${t.id})">CONCLUIR</button>` : '✅'}
-        </div>`).join('');
 }
 
 function finishTask(id) {
-    db.tasks.find(t => t.id === id).status = 'Concluída';
-    save(); renderWorkerUI();
+    const task = db.tasks.find(t => t.id === id);
+    if (task) {
+        task.status = 'Concluída';
+        save();
+        renderWorkerUI();
+    }
 }
 
-// ================= RELATÓRIO =================
+// ================= TEMA E WHATSAPP =================
+function toggleDarkMode() {
+    document.body.classList.toggle('dark-mode');
+}
+
 function generateReport() {
     const tasks = db.tasks.filter(t => t.date === selectedDate);
     let r = `📋 *BELIZE RDT - ${selectedDate.split('-').reverse().join('/')}*\n`;
@@ -146,5 +191,6 @@ function generateReport() {
 }
 
 function sendAndClear() {
-    window.open(`https://wa.me/${MY_PHONE}?text=${encodeURIComponent(document.getElementById('report-text').value)}`, '_blank');
+    const text = document.getElementById('report-text').value;
+    window.open(`https://wa.me/${MY_PHONE}?text=${encodeURIComponent(text)}`, '_blank');
 }
