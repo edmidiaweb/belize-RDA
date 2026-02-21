@@ -3,54 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Belize RDT - Sistema de Gestão</title>
+    <title>Belize RDA - Gestão de Zeladoria</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
 </head>
 <body>
 
 <div class="container">
     <div class="header">
-        <h1>BELIZE RDT</h1>
-        <p class="subtitle">RELATÓRIO DIÁRIO DE TRABALHO</p>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="text-align: left;">
+                <h1>BELIZE RDA</h1>
+                <h7>Relatório Diário de Atividades</h7>
+                <p class="subtitle">GESTÃO DE ZELADORIA</p>
+
+            </div>
+            <button id="theme-toggle" onclick="toggleDarkMode()" style="width: auto; padding: 10px; background: transparent; font-size: 1.2rem;">🌓</button>
+        </div>
     </div>
 
     <div id="login-screen">
-        <input type="text" id="login-user" placeholder="Nome do Funcionário">
+        <input type="text" id="login-user" placeholder="Usuário">
         <input type="password" id="login-pass" placeholder="Senha">
         <button class="btn-adm" onclick="handleLogin()">ENTRAR NO SISTEMA</button>
-        <p style="text-align:center; font-size:0.6rem; color:#94a3b8; margin-top:10px;">Acesso restrito a colaboradores Belize.</p>
-    </div>
-
-    <div id="change-pass-screen" class="hidden">
-        <div class="card border-danger">
-            <h4>🔐 Nova Senha Obrigatória</h4>
-            <p style="font-size:0.8rem">Para sua segurança, crie uma senha pessoal:</p>
-            <input type="password" id="new-p1" placeholder="Nova Senha">
-            <input type="password" id="new-p2" placeholder="Confirme a Senha">
-            <button class="btn-success" onclick="finalizePassChange()">SALVAR E ACESSAR</button>
-        </div>
     </div>
 
     <div id="admin-panel" class="hidden">
         <div class="nav-header">
-            <b class="text-belize">PAINEL ENCARREGADO</b>
+            <b class="text-accent">PAINEL ENCARREGADO</b>
             <button class="btn-small" onclick="location.reload()">SAIR</button>
         </div>
 
-        <div class="card bg-dash">
-            <h4 style="margin:0 0 10px 0; color: #1e40af;">📊 Produtividade Semanal</h4>
-            <div id="dashboard-stats"></div>
-            <p id="week-info" style="font-size: 0.6rem; color: #60a5fa; margin-top: 8px; text-align: center;"></p>
-        </div>
-        
         <div class="card">
-            <h4>📅 Agendar Atividade</h4>
-            <select id="assign-to"></select>
-            <input type="text" id="task-desc" placeholder="O que deve ser feito?">
-            <button class="btn-adm" onclick="createTask()">LANÇAR TAREFA</button>
+            <h4>📅 Planejamento Mensal</h4>
+            <div id="calendar-container"></div>
+            <p id="selected-date-label" class="date-display"></p>
         </div>
 
-        <h4>Equipe e Atividades</h4>
+        <div class="card admin-action-card">
+            <h4>🛠️ Registrar Minha Atividade (Admin)</h4>
+            <input type="text" id="admin-task-desc" placeholder="O que VOCÊ realizou?">
+            <input type="file" accept="image/*" capture="environment" id="admin-photo-input">
+            <textarea id="admin-task-obs" placeholder="Comentários adicionais..."></textarea>
+            <button class="btn-adm" onclick="saveAdminTask()">SALVAR MINHA ATIVIDADE</button>
+        </div>
+        
+        <div class="card bg-dash">
+            <h4>➕ Agendar para Funcionário</h4>
+            <select id="assign-to"></select>
+            <input type="text" id="task-desc" placeholder="Descrição da tarefa...">
+            <button class="btn-adm" onclick="createTask()">LANÇAR PARA O DIA</button>
+        </div>
+
+        <h4>Acompanhamento de Atividades</h4>
         <div id="worker-accordion"></div>
 
         <div class="card bg-report">
@@ -67,10 +72,8 @@
             <b>Olá, <span id="display-worker-name"></span></b>
             <button class="btn-small" onclick="location.reload()">SAIR</button>
         </div>
-        
         <div id="active-task-area" class="hidden"></div>
-        
-        <h4>Suas Atribuições</h4>
+        <h4>Suas Tarefas de Hoje</h4>
         <div id="worker-task-list"></div>
     </div>
 </div>

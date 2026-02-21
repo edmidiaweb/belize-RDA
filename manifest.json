@@ -1,0 +1,20 @@
+{
+  "short_name": "BelizeRDA",
+  "name": "Belize RDT - Gestão de Manutenção",
+  "description": "Sistema de Relatório Diário de Trabalho para gestão de equipe e manutenção.",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/4342/4342728.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f8fafc",
+  "theme_color": "#1e40af",
+  "scope": "./",
+  "lang": "pt-BR"
+}

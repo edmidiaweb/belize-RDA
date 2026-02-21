@@ -1,190 +1,258 @@
-const MY_PHONE = "5513996305218";
-const ADMIN_PASS = "admbelize2026";
-const DB_NAME = 'belize_rdt_v28';
+// --- LÓGICA DE TEMA (MODO NOTURNO) ---
+function toggleDarkMode() {
+    const isDark = document.body.classList.toggle('dark-mode');
+    localStorage.setItem('belize_theme', isDark ? 'dark' : 'light');
+}
 
-// Inicialização de Dados
+// Verifica preferência ao carregar
+(function initTheme() {
+    const savedTheme = localStorage.getItem('belize_theme');
+    if (savedTheme === 'dark') document.body.classList.add('dark-mode');
+})();
+
+const MY_PHONE = "5513996305218";
+const DB_NAME = 'belize_rdt_v80';
+let selectedDate = new Date().toISOString().split('T')[0];
+
 let db = JSON.parse(localStorage.getItem(DB_NAME)) || {
-    admin: { pass: ADMIN_PASS },
+    adminTasks: [],
     team: {
-        "lucas": { name: "Lucas", pass: "123", tasks: [], weeklyCount: 0 },
-        "gamarra": { name: "Gamarra", pass: "123", tasks: [], weeklyCount: 0 },
-        "mateus": { name: "Mateus", pass: "123", tasks: [], weeklyCount: 0 },
-        "luis": { name: "Luis", pass: "123", tasks: [], weeklyCount: 0 }
+        "lucas": { name: "Lucas", pass: "123", tasks: [] },
+        "gamarra": { name: "Gamarra", pass: "123", tasks: [] },
+        "mateus": { name: "Mateus", pass: "123", tasks: [] },
+        "luis": { name: "Luis", pass: "123", tasks: [] }
     }
 };
 
-let currentUserKey = null;
-let currentPhotoBase64 = null;
+const save = () => localStorage.setItem(DB_NAME, JSON.stringify(db));
+const getNowTime = () => new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
-function save() { localStorage.setItem(DB_NAME, JSON.stringify(db)); }
-function getTime() { return new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); }
-
-// Lógica de Reset de Domingo
-function checkWeeklyReset() {
-    const lastReset = localStorage.getItem('belize_last_reset');
-    const agora = new Date();
-    const dataHoje = agora.toISOString().split('T')[0];
-    if (agora.getDay() === 0 && lastReset !== dataHoje) {
-        for (let k in db.team) db.team[k].weeklyCount = 0;
-        localStorage.setItem('belize_last_reset', dataHoje);
-        save();
+// --- RENDERIZAÇÃO DO CALENDÁRIO ---
+function renderCalendar() {
+    const container = document.getElementById('calendar-container');
+    const now = new Date();
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    
+    let html = `<div class="calendar-grid">`;
+    for(let i = 1; i <= daysInMonth; i++) {
+        const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+        const active = dateStr === selectedDate ? 'selected-day' : '';
+        html += `<div class="cal-day ${active}" onclick="selectDate('${dateStr}')">${i}</div>`;
     }
+    html += `</div>`;
+    container.innerHTML = html;
+    document.getElementById('selected-date-label').innerText = `Data Selecionada: ${new Date(selectedDate + "T12:00:00").toLocaleDateString('pt-BR')}`;
 }
-checkWeeklyReset();
 
-// Login
+function selectDate(date) {
+    selectedDate = date;
+    renderCalendar();
+    renderAdminUI();
+}
+
+// --- LOGIN E NAVEGAÇÃO ---
 function handleLogin() {
     const u = document.getElementById('login-user').value.trim().toLowerCase();
     const p = document.getElementById('login-pass').value;
-    if(u === 'admin' && p === db.admin.pass) {
-        document.getElementById('login-screen').classList.add('hidden');
-        document.getElementById('admin-panel').classList.remove('hidden');
+
+    if(u === 'admin' && p === 'admbelize2026') {
+        showScreen('admin-panel');
+        renderCalendar();
         renderAdminUI();
         return;
     }
     if(db.team[u] && db.team[u].pass === p) {
-        currentUserKey = u;
-        document.getElementById('login-screen').classList.add('hidden');
-        if(p === "123") document.getElementById('change-pass-screen').classList.remove('hidden');
-        else showWorkerPanel();
-    } else alert("Acesso negado.");
+        window.currentUserKey = u;
+        showScreen('worker-panel');
+        renderWorkerUI();
+    } else alert("Acesso inválido.");
 }
 
-function finalizePassChange() {
-    const p1 = document.getElementById('new-p1').value;
-    if(p1.length < 3 || p1 === "123") return alert("Senha inválida.");
-    db.team[currentUserKey].pass = p1;
-    save(); showWorkerPanel();
+function showScreen(id) {
+    ['login-screen', 'admin-panel', 'worker-panel'].forEach(s => document.getElementById(s).classList.add('hidden'));
+    document.getElementById(id).classList.remove('hidden');
 }
 
-// Painel Funcionário
-function showWorkerPanel() {
-    document.getElementById('change-pass-screen').classList.add('hidden');
-    document.getElementById('worker-panel').classList.remove('hidden');
-    document.getElementById('display-worker-name').innerText = db.team[currentUserKey].name;
-    renderWorkerTasks();
+// --- ADMIN: REGISTRAR ATIVIDADE PRÓPRIA ---
+function saveAdminTask() {
+    const desc = document.getElementById('admin-task-desc').value;
+    const obs = document.getElementById('admin-task-obs').value;
+    const photoFile = document.getElementById('admin-photo-input').files[0];
+
+    if(!desc) return alert("Descreva a atividade.");
+
+    const execute = (img = null) => {
+        db.adminTasks.push({
+            id: Date.now(),
+            date: selectedDate,
+            desc: "ADMIN: " + desc,
+            obs: obs,
+            photo: img,
+            time: getNowTime()
+        });
+        save();
+        alert("Atividade registrada!");
+        document.getElementById('admin-task-desc').value = "";
+        document.getElementById('admin-task-obs').value = "";
+        document.getElementById('admin-photo-input').value = "";
+        renderAdminUI();
+    };
+
+    if(photoFile) {
+        const reader = new FileReader();
+        reader.onload = (e) => execute(e.target.result);
+        reader.readAsDataURL(photoFile);
+    } else execute();
 }
 
-function renderWorkerTasks() {
+// --- ADMIN: DASHBOARD ---
+function renderAdminUI() {
+    const accordion = document.getElementById('worker-accordion');
+    accordion.innerHTML = '';
+    document.getElementById('assign-to').innerHTML = Object.keys(db.team).map(k => `<option value="${k}">${db.team[k].name}</option>`).join('');
+
+    const adminTasksHoje = db.adminTasks.filter(t => t.date === selectedDate);
+    if(adminTasksHoje.length > 0) {
+        let adminHtml = adminTasksHoje.map(t => `
+            <div class="task-item" style="border-left: 3px solid var(--belize)">
+                <div style="display:flex; justify-content:space-between">
+                    <b>${t.desc}</b>
+                    <small style="color:var(--belize)">ADMIN</small>
+                </div>
+                <small>Horário: ${t.time}</small>
+                ${t.obs ? `<small><i>Obs: ${t.obs}</i></small>` : ''}
+            </div>
+        `).join('');
+        
+        accordion.innerHTML += `
+            <div class="worker-card" style="border-color:var(--belize)">
+                <div class="worker-header" style="background:var(--belize); color:white">
+                    <span>👤 MINHAS ATIVIDADES</span>
+                    <span>${adminTasksHoje.length} ▼</span>
+                </div>
+                <div class="worker-content hidden">${adminHtml}</div>
+            </div>`;
+    }
+
+    for(let k in db.team) {
+        const tasks = db.team[k].tasks.filter(t => t.date === selectedDate);
+        let tasksHtml = tasks.map(t => `
+            <div class="task-item">
+                <div style="display:flex; justify-content:space-between">
+                    <b>${t.desc}</b>
+                    <small style="color:${t.status === 'Concluída' ? 'var(--success)' : 'var(--warning)'}">${t.status.toUpperCase()}</small>
+                </div>
+                <div style="font-size:0.7rem; margin-top:5px;">
+                    Início: <b class="time-badge">${t.start || '--:--'}</b> | Fim: <b class="time-badge">${t.end || '--:--'}</b>
+                </div>
+                <div style="display:flex; gap:5px; margin-top:8px;">
+                    <button class="btn-small" style="background:var(--warning); color:white" onclick="editTask('${k}', ${t.id})">EDITAR</button>
+                    <button class="btn-small" style="background:var(--danger); color:white" onclick="deleteTask('${k}', ${t.id})">EXCLUIR</button>
+                </div>
+            </div>
+        `).join('') || '<p style="padding:10px; font-size:0.7rem; opacity:0.6;">Sem atividades planejadas.</p>';
+
+        accordion.innerHTML += `
+            <div class="worker-card">
+                <div class="worker-header" onclick="this.nextElementSibling.classList.toggle('hidden')">
+                    <span>👤 ${db.team[k].name}</span>
+                    <span>${tasks.length} ▼</span>
+                </div>
+                <div class="worker-content hidden">${tasksHtml}</div>
+            </div>`;
+    }
+}
+
+// (Funções auxiliares: createTask, editTask, deleteTask, renderWorkerUI, startTask, finishTask permanecem seguindo o padrão anterior)
+
+function createTask() {
+    const k = document.getElementById('assign-to').value;
+    const d = document.getElementById('task-desc').value;
+    if(!d) return alert("Preencha a descrição.");
+    db.team[k].tasks.push({ id: Date.now(), date: selectedDate, desc: d, status: 'Pendente', start: null, end: null, photo: null, obs: '' });
+    save(); renderAdminUI();
+    document.getElementById('task-desc').value = "";
+}
+
+function editTask(k, id) {
+    const t = db.team[k].tasks.find(x => x.id === id);
+    const n = prompt("Editar tarefa:", t.desc);
+    if(n) { t.desc = n; save(); renderAdminUI(); }
+}
+
+function deleteTask(k, id) {
+    if(confirm("Excluir tarefa?")) {
+        db.team[k].tasks = db.team[k].tasks.filter(x => x.id !== id);
+        save(); renderAdminUI();
+    }
+}
+
+function renderWorkerUI() {
+    const user = window.currentUserKey;
+    document.getElementById('display-worker-name').innerText = db.team[user].name;
     const list = document.getElementById('worker-task-list');
     const activeArea = document.getElementById('active-task-area');
-    list.innerHTML = ''; activeArea.innerHTML = '';
-    const activeTask = db.team[currentUserKey].tasks.find(t => t.status === 'Em Andamento');
+    const hoje = new Date().toISOString().split('T')[0];
+    
+    list.innerHTML = ''; 
+    const tasksHoje = db.team[user].tasks.filter(t => t.date === hoje);
+    const activeTask = tasksHoje.find(t => t.status === 'Em Andamento');
 
     if(activeTask) {
         activeArea.classList.remove('hidden');
         activeArea.innerHTML = `
             <div class="card" style="border: 2px solid var(--warning)">
-                <p style="color:var(--warning); font-weight:bold; font-size:0.7rem">⚡ TAREFA ATIVA DESDE ${activeTask.start}</p>
-                <h2 style="margin:5px 0">${activeTask.desc}</h2>
-                <label class="btn-photo" style="display:block; text-align:center; padding:12px; border-radius:8px; cursor:pointer;">
-                    📷 TIRAR FOTO DO SERVIÇO
-                    <input type="file" accept="image/*" capture="environment" style="display:none" onchange="previewPhoto(event)">
-                </label>
-                <img id="img-preview" class="preview-img hidden">
-                <textarea id="task-obs" placeholder="Observações do serviço..."></textarea>
-                <button class="btn-success" onclick="finishTask(${activeTask.id})">FINALIZAR E ENVIAR</button>
+                <small style="color:var(--warning)">ATIVIDADE ATIVA</small>
+                <h3>${activeTask.desc}</h3>
+                <input type="file" accept="image/*" capture="environment" id="photo-input">
+                <textarea id="task-obs" placeholder="Alguma observação?"></textarea>
+                <button class="btn-success" onclick="finishTask(${activeTask.id})">FINALIZAR AGORA</button>
             </div>`;
     } else {
         activeArea.classList.add('hidden');
-        db.team[currentUserKey].tasks.filter(t => t.status === 'Pendente').forEach(t => {
-            list.innerHTML += `<div class="card"><b>${t.desc}</b><button class="btn-adm" onclick="startTask(${t.id})" style="margin-top:10px">INICIAR AGORA</button></div>`;
+        tasksHoje.filter(t => t.status === 'Pendente').forEach(t => {
+            list.innerHTML += `<div class="card"><b>${t.desc}</b><button class="btn-adm" onclick="startTask(${t.id})" style="margin-top:10px">INICIAR SERVIÇO</button></div>`;
         });
+        if(tasksHoje.length === 0) list.innerHTML = '<p style="text-align:center; opacity:0.5">Nenhuma tarefa para hoje.</p>';
     }
 }
 
 function startTask(id) {
-    const t = db.team[currentUserKey].tasks.find(x => x.id === id);
-    t.status = 'Em Andamento'; t.start = getTime();
-    save(); renderWorkerTasks();
-}
-
-function previewPhoto(e) {
-    const reader = new FileReader();
-    reader.onload = () => {
-        currentPhotoBase64 = reader.result;
-        document.getElementById('img-preview').src = reader.result;
-        document.getElementById('img-preview').classList.remove('hidden');
-    };
-    reader.readAsDataURL(e.target.files[0]);
+    const t = db.team[window.currentUserKey].tasks.find(x => x.id === id);
+    t.status = 'Em Andamento';
+    t.start = getNowTime();
+    save(); renderWorkerUI();
 }
 
 function finishTask(id) {
-    if(!currentPhotoBase64) return alert("A foto é obrigatória.");
-    const t = db.team[currentUserKey].tasks.find(x => x.id === id);
-    t.status = 'Concluída'; t.end = getTime(); t.photo = currentPhotoBase64;
-    t.obs = document.getElementById('task-obs').value;
-    db.team[currentUserKey].weeklyCount++;
-    currentPhotoBase64 = null;
-    save(); renderWorkerTasks();
-    alert("Tarefa concluída!");
-}
-
-// Painel Admin
-function renderAdminUI() {
-    renderDashboard();
-    const accordion = document.getElementById('worker-accordion');
-    const select = document.getElementById('assign-to');
-    accordion.innerHTML = ''; select.innerHTML = '';
-    for(let k in db.team) {
-        select.innerHTML += `<option value="${k}">${db.team[k].name}</option>`;
-        let tasksHtml = '';
-        db.team[k].tasks.forEach(t => {
-            tasksHtml += `<div class="task-item">
-                <span>${t.desc} <small>(${t.start || '--'}/${t.end || '--'})</small></span>
-                <span class="status-badge" style="background:${t.status==='Concluída'?'#16a34a':(t.status==='Em Andamento'?'#d97706':'#94a3b8')}">${t.status}</span>
-            </div>`;
-        });
-        accordion.innerHTML += `
-            <div class="worker-card">
-                <div class="worker-header" onclick="document.getElementById('c-${k}').classList.toggle('hidden')">
-                    <span>👤 ${db.team[k].name}</span> <span>${db.team[k].tasks.length} ▼</span>
-                </div>
-                <div id="c-${k}" class="worker-content hidden">${tasksHtml || 'Sem tarefas'}</div>
-            </div>`;
-    }
-}
-
-function renderDashboard() {
-    const container = document.getElementById('dashboard-stats');
-    container.innerHTML = '';
-    let max = Math.max(...Object.values(db.team).map(w => w.weeklyCount || 0), 5);
-    for(let k in db.team) {
-        const w = db.team[k];
-        const percent = ((w.weeklyCount || 0) / max) * 100;
-        container.innerHTML += `
-            <div class="stat-row">
-                <div class="stat-label"><span>${w.name}</span><span>${w.weeklyCount || 0}</span></div>
-                <div class="progress-bg"><div class="progress-bar" style="width:${percent}%"></div></div>
-            </div>`;
-    }
-    document.getElementById('week-info').innerText = "Reset automático todo Domingo às 00:00";
-}
-
-function createTask() {
-    const k = document.getElementById('assign-to').value;
-    const d = document.getElementById('task-desc').value;
-    if(!d) return;
-    db.team[k].tasks.push({ id: Date.now(), desc: d, status: 'Pendente', start: null, end: null, photo: null, obs: '' });
-    save(); renderAdminUI(); document.getElementById('task-desc').value = "";
+    const t = db.team[window.currentUserKey].tasks.find(x => x.id === id);
+    const photoFile = document.getElementById('photo-input').files[0];
+    const done = (img = null) => {
+        t.status = 'Concluída'; t.end = getNowTime(); t.photo = img;
+        t.obs = document.getElementById('task-obs').value;
+        save(); alert("Tarefa concluída!"); renderWorkerUI();
+    };
+    if(photoFile) { const r = new FileReader(); r.onload = (e) => done(e.target.result); r.readAsDataURL(photoFile); } else done();
 }
 
 function generateReport() {
-    let r = `📋 *BELIZE RDT - ${new Date().toLocaleDateString()}*\n`;
+    let report = `📋 *BELIZE RDT - ${new Date(selectedDate + "T12:00:00").toLocaleDateString()}*\\n`;
+    const adminDone = db.adminTasks.filter(t => t.date === selectedDate);
+    if(adminDone.length) {
+        report += `\\n👤 *ENCARREGADO (ADMIN)*\\n`;
+        adminDone.forEach(t => report += `🛠️ ${t.desc.replace("ADMIN: ", "")}\\n⏱ ${t.time}\\n`);
+    }
     for(let k in db.team) {
-        const done = db.team[k].tasks.filter(t => t.status === 'Concluída');
-        if(done.length) {
-            r += `\n👤 *${db.team[k].name.toUpperCase()}*\n`;
-            done.forEach(t => r += `✅ ${t.desc}\n⏰ ${t.start} às ${t.end}\n${t.obs ? '📝 Obs: '+t.obs+'\n' : ''}`);
+        const tasks = db.team[k].tasks.filter(t => t.date === selectedDate && t.status === 'Concluída');
+        if(tasks.length) {
+            report += `\\n👤 *${db.team[k].name.toUpperCase()}*\\n`;
+            tasks.forEach(t => report += `✅ ${t.desc}\\n⏱ ${t.start} - ${t.end}\\n`);
         }
     }
-    document.getElementById('report-text').value = r;
+    document.getElementById('report-text').value = report;
     document.getElementById('report-area').classList.remove('hidden');
 }
 
 function sendAndClear() {
-    const txt = encodeURIComponent(document.getElementById('report-text').value);
-    window.open(`https://wa.me/${MY_PHONE}?text=${txt}`, '_blank');
-    for(let k in db.team) db.team[k].tasks = db.team[k].tasks.filter(t => t.status !== 'Concluída');
-    save(); location.reload();
+    window.open(`https://wa.me/${MY_PHONE}?text=${encodeURIComponent(document.getElementById('report-text').value)}`, '_blank');
 }
