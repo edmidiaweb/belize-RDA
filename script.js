@@ -1,16 +1,14 @@
 /**
- * BELIZE RDT - SINCRONIZAÇÃO VIA GITHUB API (v9.1)
+ * BELIZE RDT - SINCRONIZAÇÃO VIA GITHUB API (v9.2)
  */
 
-// 1. CONFIGURAÇÕES (PREENCHA AQUI)
 const GITHUB_CONFIG = {
-    token: "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", 
+    token: "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", 
     owner: "edmidiaweb",
     repo: "belize-RDA",
     path: "tarefas.json"
 };
 
-// 2. ESTADO DO SISTEMA
 let App = {
     user: null,
     selectedDate: new Date().toISOString().split('T')[0],
@@ -30,6 +28,7 @@ let App = {
 async function carregarDados() {
     try {
         const response = await fetch(`https://raw.githubusercontent.com/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/main/${GITHUB_CONFIG.path}?t=${Date.now()}`);
+        if (!response.ok) throw new Error("Erro ao buscar JSON");
         const data = await response.json();
         App.db.tasks = data.tasks;
     } catch (e) {
@@ -37,30 +36,37 @@ async function carregarDados() {
     }
 }
 
-// 4. SALVAR NO GITHUB (API)
+// 4. SALVAR NO GITHUB
 async function salvarTarefasNoGitHub() {
     const url = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}`;
     
-    const getRes = await fetch(url, { headers: { 'Authorization': `token ${GITHUB_CONFIG.token}` } });
-    const fileData = await getRes.json();
-    
-    const content = btoa(unescape(encodeURIComponent(JSON.stringify({ tasks: App.db.tasks }, null, 2))));
-    
-    const updateRes = await fetch(url, {
-        method: 'PUT',
-        headers: {
-            'Authorization': `token ${GITHUB_CONFIG.token}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            message: "Atualização via painel",
-            content: content,
-            sha: fileData.sha
-        })
-    });
+    try {
+        const getRes = await fetch(url, { headers: { 'Authorization': `token ${GITHUB_CONFIG.token}` } });
+        const fileData = await getRes.json();
+        
+        const content = btoa(unescape(encodeURIComponent(JSON.stringify({ tasks: App.db.tasks }, null, 2))));
+        
+        const updateRes = await fetch(url, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `token ${GITHUB_CONFIG.token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                message: "Atualização via painel",
+                content: content,
+                sha: fileData.sha
+            })
+        });
 
-    if (updateRes.ok) alert("Tarefa sincronizada com sucesso!");
-    else alert("Erro ao salvar no GitHub.");
+        if (updateRes.ok) {
+            alert("Tarefa sincronizada com sucesso!");
+        } else {
+            throw new Error("Falha na API do GitHub");
+        }
+    } catch (e) {
+        alert("Erro ao salvar: " + e.message);
+    }
 }
 
 // 5. LOGIN
@@ -86,16 +92,16 @@ function showScreen(id) {
 }
 
 // 6. ADMINISTRADOR
-function initAdmin() {
+window.initAdmin = function() {
     const sel = document.getElementById('assign-to');
     sel.innerHTML = Object.keys(App.db.team).filter(k => k !== 'admin').map(k => `<option value="${k}">${App.db.team[k].name}</option>`).join('');
     renderAdminTasks();
-}
+};
 
 window.createTask = async function() {
     const worker = document.getElementById('assign-to').value;
     const desc = document.getElementById('task-desc').value.trim();
-    if (!desc) return;
+    if (!desc) return alert("Escreva a tarefa!");
 
     App.db.tasks.push({
         id: Date.now(),
@@ -110,21 +116,23 @@ window.createTask = async function() {
     document.getElementById('task-desc').value = "";
 };
 
-function renderAdminTasks() {
+window.renderAdminTasks = function() {
     const container = document.getElementById('worker-accordion');
+    if(!container) return;
     container.innerHTML = Object.keys(App.db.team).filter(k => k !== 'admin').map(key => {
         const tasks = App.db.tasks.filter(t => t.workerId === key);
         return `<div class="card"><b>${App.db.team[key].name}</b><br>${tasks.map(t => t.desc).join(', ')}</div>`;
     }).join('');
-}
+};
 
 // 7. FUNCIONÁRIO
-function renderWorkerTasks() {
+window.renderWorkerTasks = function() {
     const list = document.getElementById('worker-task-list');
+    if(!list) return;
     document.getElementById('display-worker-name').innerText = App.db.team[App.user].name;
     const tasks = App.db.tasks.filter(t => t.workerId === App.user);
-    list.innerHTML = tasks.map(t => `<div class="card">${t.desc} - ${t.status}</div>`).join('');
-}
+    list.innerHTML = tasks.length > 0 ? tasks.map(t => `<div class="card">${t.desc} - ${t.status}</div>`).join('') : "Nenhuma tarefa.";
+};
 
 // 8. INICIALIZAÇÃO
 window.onload = async () => {
