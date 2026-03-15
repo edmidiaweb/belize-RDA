@@ -3,9 +3,9 @@
  */
 
 const GITHUB_CONFIG = {
-    token: "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", // Gere um novo token no GitHub
+    token: "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", // Gere um novo token no GitHub
     owner: "edmidiaweb",
-    repo: "Belize-RDA",
+    repo: "belize-RDA",
     path: "tarefas.json"
 };
 
