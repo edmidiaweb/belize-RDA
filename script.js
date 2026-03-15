@@ -3,9 +3,9 @@
  */
 
 const GITHUB_CONFIG = {
-    token: "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", 
+    token: "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", 
     owner: "edmidiaweb",
-    repo: "belize-RDA",
+    repo: "Belize-RDA",
     path: "tarefas.json"
 };
 
