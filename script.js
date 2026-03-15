@@ -1,5 +1,5 @@
 /**
- * BELIZE RDT - MODO TESTE (Sincronização Ativa)
+ * BELIZE RDA - MODO TESTE (Sincronização Ativa)
  */
 
 const GITHUB_CONFIG = {
