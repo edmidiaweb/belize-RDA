@@ -1,9 +1,9 @@
 /**
- * BELIZE RDT - SINCRONIZAÇÃO VIA GITHUB API (v9.2)
+ * BELIZE RDT - MODO TESTE (Sincronização Ativa)
  */
 
 const GITHUB_CONFIG = {
-    token: "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", 
+    token: "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", // Gere um novo token no GitHub
     owner: "edmidiaweb",
     repo: "Belize-RDA",
     path: "tarefas.json"
@@ -36,14 +36,13 @@ async function carregarDados() {
     }
 }
 
-// 4. SALVAR NO GITHUB
+// 4. SALVAR NO GITHUB (API)
 async function salvarTarefasNoGitHub() {
     const url = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}`;
     
     try {
         const getRes = await fetch(url, { headers: { 'Authorization': `token ${GITHUB_CONFIG.token}` } });
         const fileData = await getRes.json();
-        
         const content = btoa(unescape(encodeURIComponent(JSON.stringify({ tasks: App.db.tasks }, null, 2))));
         
         const updateRes = await fetch(url, {
@@ -59,17 +58,14 @@ async function salvarTarefasNoGitHub() {
             })
         });
 
-        if (updateRes.ok) {
-            alert("Tarefa sincronizada com sucesso!");
-        } else {
-            throw new Error("Falha na API do GitHub");
-        }
+        if (updateRes.ok) alert("Sincronizado com sucesso!");
+        else throw new Error("Falha na API");
     } catch (e) {
-        alert("Erro ao salvar: " + e.message);
+        alert("Erro no GitHub: " + e.message);
     }
 }
 
-// 5. LOGIN
+// 5. LOGIN (Sem restrição de horário)
 window.handleLogin = function() {
     const u = document.getElementById('login-user').value;
     const p = document.getElementById('login-pass').value;
@@ -125,13 +121,13 @@ window.renderAdminTasks = function() {
     }).join('');
 };
 
-// 7. FUNCIONÁRIO
+// 7. FUNCIONÁRIO (Sem restrição de horário)
 window.renderWorkerTasks = function() {
     const list = document.getElementById('worker-task-list');
     if(!list) return;
     document.getElementById('display-worker-name').innerText = App.db.team[App.user].name;
     const tasks = App.db.tasks.filter(t => t.workerId === App.user);
-    list.innerHTML = tasks.length > 0 ? tasks.map(t => `<div class="card">${t.desc} - ${t.status}</div>`).join('') : "Nenhuma tarefa.";
+    list.innerHTML = tasks.length > 0 ? tasks.map(t => `<div class="card">${t.desc} - ${t.status}</div>`).join('') : "Nenhuma tarefa pendente.";
 };
 
 // 8. INICIALIZAÇÃO
