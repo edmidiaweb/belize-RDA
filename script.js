@@ -3,7 +3,7 @@
  */
 
 const GITHUB_CONFIG = {
-    token: "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", 
+    token: "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", 
     owner: "edmidiaweb",
     repo: "Belize-RDA",
     path: "tarefas.json"
