@@ -1,9 +1,16 @@
 /**
- * BELIZE RDT - SINCRONIZAÇÃO VIA JSON (v9.0)
- * O sistema lê o arquivo 'tarefas.json' do servidor toda vez que abre.
+ * BELIZE RDT - SINCRONIZAÇÃO VIA GITHUB API (v9.1)
  */
 
-const MY_PHONE = "5513996305218";
+// 1. CONFIGURAÇÕES (PREENCHA AQUI)
+const GITHUB_CONFIG = {
+    token: "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", 
+    owner: "edmidiaweb",
+    repo: "belize-RDA",
+    path: "tarefas.json"
+};
+
+// 2. ESTADO DO SISTEMA
 let App = {
     user: null,
     selectedDate: new Date().toISOString().split('T')[0],
@@ -19,25 +26,44 @@ let App = {
     }
 };
 
-// 1. CARREGAR DADOS DO GITHUB
+// 3. CARREGAR DADOS DO GITHUB
 async function carregarDados() {
     try {
-        const response = await fetch('tarefas.json?nocache=' + Date.now());
+        const response = await fetch(`https://raw.githubusercontent.com/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/main/${GITHUB_CONFIG.path}?t=${Date.now()}`);
         const data = await response.json();
         App.db.tasks = data.tasks;
-        console.log("Dados sincronizados com o GitHub.");
     } catch (e) {
-        console.warn("Usando dados locais (erro ao buscar JSON).");
+        console.error("Erro ao carregar do GitHub:", e);
     }
 }
 
-// 2. INICIALIZAÇÃO
-window.onload = async () => {
-    await carregarDados();
-    if (localStorage.getItem('belize_theme') === 'dark') document.body.classList.add('dark-mode');
-};
+// 4. SALVAR NO GITHUB (API)
+async function salvarTarefasNoGitHub() {
+    const url = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}`;
+    
+    const getRes = await fetch(url, { headers: { 'Authorization': `token ${GITHUB_CONFIG.token}` } });
+    const fileData = await getRes.json();
+    
+    const content = btoa(unescape(encodeURIComponent(JSON.stringify({ tasks: App.db.tasks }, null, 2))));
+    
+    const updateRes = await fetch(url, {
+        method: 'PUT',
+        headers: {
+            'Authorization': `token ${GITHUB_CONFIG.token}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            message: "Atualização via painel",
+            content: content,
+            sha: fileData.sha
+        })
+    });
 
-// 3. LOGIN (Mantido)
+    if (updateRes.ok) alert("Tarefa sincronizada com sucesso!");
+    else alert("Erro ao salvar no GitHub.");
+}
+
+// 5. LOGIN
 window.handleLogin = function() {
     const u = document.getElementById('login-user').value;
     const p = document.getElementById('login-pass').value;
@@ -59,21 +85,49 @@ function showScreen(id) {
     document.getElementById(id).classList.remove('hidden');
 }
 
-// 4. MÓDULOS DE RENDERIZAÇÃO
-function renderWorkerTasks() {
-    const list = document.getElementById('worker-task-list');
-    document.getElementById('display-worker-name').innerText = App.db.team[App.user].name;
-    const tasks = App.db.tasks.filter(t => t.workerId === App.user && t.date === App.selectedDate);
-
-    list.innerHTML = tasks.length ? tasks.map(t => `
-        <div class="card">
-            <h3>${t.desc}</h3>
-            <p>Status: <b>${t.status}</b></p>
-        </div>
-    `).join('') : '<div class="card">Nenhuma tarefa para hoje.</div>';
-}
-
+// 6. ADMINISTRADOR
 function initAdmin() {
     const sel = document.getElementById('assign-to');
     sel.innerHTML = Object.keys(App.db.team).filter(k => k !== 'admin').map(k => `<option value="${k}">${App.db.team[k].name}</option>`).join('');
+    renderAdminTasks();
 }
+
+window.createTask = async function() {
+    const worker = document.getElementById('assign-to').value;
+    const desc = document.getElementById('task-desc').value.trim();
+    if (!desc) return;
+
+    App.db.tasks.push({
+        id: Date.now(),
+        workerId: worker,
+        date: App.selectedDate,
+        desc: desc,
+        status: 'Pendente'
+    });
+
+    await salvarTarefasNoGitHub();
+    renderAdminTasks();
+    document.getElementById('task-desc').value = "";
+};
+
+function renderAdminTasks() {
+    const container = document.getElementById('worker-accordion');
+    container.innerHTML = Object.keys(App.db.team).filter(k => k !== 'admin').map(key => {
+        const tasks = App.db.tasks.filter(t => t.workerId === key);
+        return `<div class="card"><b>${App.db.team[key].name}</b><br>${tasks.map(t => t.desc).join(', ')}</div>`;
+    }).join('');
+}
+
+// 7. FUNCIONÁRIO
+function renderWorkerTasks() {
+    const list = document.getElementById('worker-task-list');
+    document.getElementById('display-worker-name').innerText = App.db.team[App.user].name;
+    const tasks = App.db.tasks.filter(t => t.workerId === App.user);
+    list.innerHTML = tasks.map(t => `<div class="card">${t.desc} - ${t.status}</div>`).join('');
+}
+
+// 8. INICIALIZAÇÃO
+window.onload = async () => {
+    await carregarDados();
+    if (localStorage.getItem('belize_theme') === 'dark') document.body.classList.add('dark-mode');
+};
