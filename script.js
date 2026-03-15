@@ -3,7 +3,7 @@
  */
 
 const GITHUB_CONFIG = {
-    token: "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", // Gere um novo token no GitHub
+    token: "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", // Gere um novo token no GitHub
     owner: "edmidiaweb",
     repo: "belize-RDA",
     path: "tarefas.json"
